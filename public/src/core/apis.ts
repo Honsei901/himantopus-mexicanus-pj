@@ -14,3 +14,15 @@ export const requestFaceEncodings = (
     }
   );
 };
+
+export const compareFacialFeatures = (formData: FormData) => {
+  return axios.post(
+    'http://localhost:8088/api/facial-features/compare',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+};

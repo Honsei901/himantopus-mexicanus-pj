@@ -2,46 +2,79 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@mui/material';
 
 import Webcam from 'react-webcam';
-import { requestFaceEncodings } from '../core/apis';
+import { compareFacialFeatures } from '../core/apis';
 
 export const Body = () => {
-  const [photoData, setPhotoData] = useState<number[]>([]);
+  const [isFirstPhotoCaptured, setIsFirstPhotoCaptured] =
+    useState<boolean>(false);
+
+  const [firstFacialFeature, setFirstFacialFeature] = useState<Blob | null>(
+    null
+  );
+
+  const [matchingRate, setMatchingRate] = useState<number>(0);
+
   const webcamRef = useRef<Webcam>(null);
 
+  const resetApp = (): void => {
+    setMatchingRate(0);
+    setFirstFacialFeature(null);
+  };
+
   /**
-   * Receive a facial features
+   * Receive first facial features.
    */
-  const captureFaceImage = async () => {
+  const captureFirstFaceImage = async (): Promise<void> => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
       if (imageSrc) {
         const response = await fetch(imageSrc);
         const blob = await response.blob();
+        setFirstFacialFeature(blob);
+      }
+    }
+  };
+
+  /**
+   * Compare with first facial features and get matching rate.
+   */
+  const getMatchingRate = async (): Promise<void> => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (imageSrc && firstFacialFeature) {
+        const response = await fetch(imageSrc);
+        const blob = await response.blob();
 
         const formData = new FormData();
-        formData.append('file', blob);
+        formData.append('second_file', blob);
+        formData.append('first_file', firstFacialFeature);
 
         try {
-          const { data } = await requestFaceEncodings(formData);
-          setPhotoData(data.encodings);
+          const { data } = await compareFacialFeatures(formData);
+          console.log(data);
+          setMatchingRate(100);
         } catch (error) {
           console.error(error);
         }
+
+        resetApp();
+        setIsFirstPhotoCaptured(false);
       }
     }
   };
 
   useEffect(() => {
-    if (photoData.length > 0) {
-      console.log(photoData);
+    if (firstFacialFeature) {
+      setIsFirstPhotoCaptured(true);
     }
-  }, [photoData]);
+  }, [firstFacialFeature]);
 
   return (
     <>
       <div className="flex flex-col justify-center items-center mt-[150px] relative">
         <div className="mb-2 text-2xl">
-          The matching rate is <span className="text-red-500">85</span>%
+          The matching rate is{' '}
+          <span className="text-red-500">{matchingRate}</span>%
         </div>
         <Webcam
           audio={false}
@@ -69,11 +102,19 @@ export const Body = () => {
         </div>
       </div>
 
-      <div className="mt-10 flex justify-center">
-        <Button variant="contained" onClick={captureFaceImage}>
-          <div className="text-xl">CAPTURE</div>
-        </Button>
-      </div>
+      {isFirstPhotoCaptured ? (
+        <div className="mt-10 flex justify-center">
+          <Button variant="contained" color="error" onClick={getMatchingRate}>
+            <div className="text-xl">SECOND CAPTURE</div>
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-10 flex justify-center">
+          <Button variant="contained" onClick={captureFirstFaceImage}>
+            <div className="text-xl">FIRST CAPTURE</div>
+          </Button>
+        </div>
+      )}
     </>
   );
 };
