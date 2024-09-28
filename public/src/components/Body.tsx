@@ -17,8 +17,8 @@ export const Body = () => {
   const webcamRef = useRef<Webcam>(null);
 
   const resetApp = (): void => {
-    setMatchingRate(0);
     setFirstFacialFeature(null);
+    setIsFirstPhotoCaptured(false);
   };
 
   /**
@@ -26,6 +26,7 @@ export const Body = () => {
    */
   const captureFirstFaceImage = async (): Promise<void> => {
     if (webcamRef.current) {
+      setMatchingRate(0);
       const imageSrc = webcamRef.current.getScreenshot();
       if (imageSrc) {
         const response = await fetch(imageSrc);
@@ -51,14 +52,13 @@ export const Body = () => {
 
         try {
           const { data } = await compareFacialFeatures(formData);
-          console.log(data);
-          setMatchingRate(100);
+          const accuracy = data.message;
+          setMatchingRate(Math.round(accuracy));
         } catch (error) {
           console.error(error);
         }
 
         resetApp();
-        setIsFirstPhotoCaptured(false);
       }
     }
   };

@@ -15,8 +15,10 @@ export const requestFaceEncodings = (
   );
 };
 
-export const compareFacialFeatures = (formData: FormData) => {
-  return axios.post(
+export const compareFacialFeatures = (
+  formData: FormData
+): Promise<AxiosResponse<{ message: number }, any>> => {
+  return axios.post<{ message: number }>(
     'http://localhost:8088/api/facial-features/compare',
     formData,
     {

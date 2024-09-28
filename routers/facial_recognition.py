@@ -23,18 +23,21 @@ async def compare_facial_feature(
         first_encoding = first_image_encodings[0]
         second_encoding = second_image_encodings[0]
 
-        if compare_faces(first_encoding, second_encoding):
-            return {"message": "Same face"}
-        else:
-            return {"message": "Different face"}
+        accuracy = compare_faces(first_encoding, second_encoding)
+
+        return {"message": accuracy}
+
     else:
         raise HTTPException(
             status_code=400, detail="Could not detect a face in one or both images"
         )
 
 
-def compare_faces(first_encoding, second_encoding, threshold=0.5):
+def compare_faces(first_encoding, second_encoding, threshold=0.6):
     # Calculate Euclidean distance.
     distance = np.linalg.norm(np.array(first_encoding) - np.array(second_encoding))
-    # Compare previouse facial feature with new one by using threshold.
-    return distance < threshold
+
+    accuracy = (1 - distance / threshold) * 100
+    accuracy = max(0, accuracy)
+
+    return accuracy
